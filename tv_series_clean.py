@@ -23,4 +23,4 @@ tv_series_df_clean.reset_index(inplace=True)
 print(tv_series_df_clean.head())
 print(tv_series_df_clean.tail())
 
-tv_series_df.to_csv(os.path.join('data','tv_series_final_clean'))
+tv_series_df_clean.to_csv(os.path.join('data','tv_series_final_clean'))
