@@ -1,6 +1,5 @@
 import os
 import re
-import time
 import numpy as np
 import pandas as pd
 import pickle
@@ -18,6 +17,7 @@ links_list_store = 'links_'
 movies_df_store = 'movies_'
 tv_series_df_store = 'tv_series_'
 
+
 def create_movie_df():
     df = pd.DataFrame(columns=['Title',
                                'Duration(Min)',
@@ -33,75 +33,76 @@ def create_movie_df():
                                ])
     return df
 
-def insert_movie_info(from_page, to_data_frame, at_row):
 
-    at_row+=1
+def insert_movie_info(from_page, to_data_frame, at_row):
+    at_row += 1
 
     # Anagrafic Data
     html_tag = from_page.find('meta', property='og:title')
-    if html_tag != None:
+    if html_tag is not None:
         to_data_frame.loc[at_row, 'Title'] = html_tag['content']
-    html_tag = from_page.find('time',itemprop='duration')
-    if html_tag != None:
-        to_data_frame.loc[at_row, 'Duration(Min)'] =int(re.search(r'PT(\d+)M',html_tag['datetime']).group(1))
+    html_tag = from_page.find('time', itemprop='duration')
+    if html_tag is not None:
+        to_data_frame.loc[at_row, 'Duration(Min)'] = int(re.search(r'PT(\d+)M', html_tag['datetime']).group(1))
     html_tag = from_page.find('meta', itemprop='datePublished')
-    if html_tag != None:
+    if html_tag is not None:
         to_data_frame.loc[at_row, 'ReleaseDate'] = pd.to_datetime(html_tag['content']).date()
 
     # Score & Review Data
     html_tag = from_page.find('span', itemprop='ratingValue')
-    if html_tag != None :
-        to_data_frame.loc[at_row,'Score'] = float(html_tag.text)/10.0
+    if html_tag is not None:
+        to_data_frame.loc[at_row, 'Score'] = float(html_tag.text) / 10.0
     html_tag = from_page.find('span', itemprop='ratingCount')
-    if html_tag != None :
-        to_data_frame.loc[at_row,'NoUsersRating'] = int((re.sub(',', '', html_tag.text)))
-    html_tag = from_page.find('div', {"class" : "metacriticScore score_favorable titleReviewBarSubItem"})
-    if html_tag != None:
-        to_data_frame.loc[at_row,'MetaScore'] = float(re.sub(r'\n','',html_tag.text))
-    html_tag =  from_page.find('a', href="reviews?ref_=tt_ov_rt")
-    if html_tag != None:
-        to_data_frame.loc[at_row,'NoReviews-Users'] = int(
-                                                        re.sub(',','',
-                                                        re.search(r'(\d{1,3}(,\d{3})*)',html_tag.text)
-                                                               .group(1)
-                                                               )
-                                                        )
+    if html_tag is not None:
+        to_data_frame.loc[at_row, 'NoUsersRating'] = int((re.sub(',', '', html_tag.text)))
+    html_tag = from_page.find('div', {"class": "metacriticScore score_favorable titleReviewBarSubItem"})
+    if html_tag is not None:
+        to_data_frame.loc[at_row, 'MetaScore'] = float(re.sub(r'\n', '', html_tag.text))
+    html_tag = from_page.find('a', href="reviews?ref_=tt_ov_rt")
+    if html_tag is not None:
+        to_data_frame.loc[at_row, 'NoReviews-Users'] = int(
+            re.sub(',', '',
+                   re.search(r'(\d{1,3}(,\d{3})*)', html_tag.text)
+                   .group(1)
+                   )
+        )
     html_tag = from_page.find('a', href="externalreviews?ref_=tt_ov_rt")
-    if html_tag != None:
+    if html_tag is not None:
         to_data_frame.loc[at_row, 'NoReviews-Crit'] = int(
-                                                        re.sub(',','',
-                                                        re.search(r'(\d{1,3}(,\d{3})*)', html_tag.text)
-                                                               .group(1)
-                                                               )
+            re.sub(',', '',
+                   re.search(r'(\d{1,3}(,\d{3})*)', html_tag.text)
+                   .group(1)
+                   )
         )
 
     # Box Office Data
 
-    html_tag = from_page.find('h4', string = 'Opening Weekend USA:')
-    if html_tag != None:
+    html_tag = from_page.find('h4', string='Opening Weekend USA:')
+    if html_tag is not None:
         html_tag = html_tag.parent.text.split()[3]
         html_tag = re.sub(r'\$|,', '', html_tag)
-        if html_tag != None:
+        if html_tag is not None:
             to_data_frame.loc[at_row, 'OpeningWE(USA)($)'] = int(html_tag)
 
     html_tag = from_page.find('h4', string='Gross USA:')
-    if html_tag != None:
+    if html_tag is not None:
         html_tag = html_tag.parent.text.split()[2]
         html_tag = re.sub(r'\$|,', '', html_tag)
-        if html_tag != None:
+        if html_tag is not None:
             to_data_frame.loc[at_row, 'Gross(USA)($)'] = int(html_tag)
 
     html_tag = from_page.find('h4', string='Cumulative Worldwide Gross:')
-    if html_tag != None:
+    if html_tag is not None:
         html_tag = html_tag.parent.text.split()[3]
         html_tag = re.sub(r'\$|,', '', html_tag)
-        if html_tag != None:
+        if html_tag is not None:
             try:
                 to_data_frame.loc[at_row, 'CumulativeWorldWide Gross($)'] = int(html_tag)
             except:
+                # TODO : understand the problem above... for now we leave nan
                 ValueError
-    #print(to_data_frame.head())
-    return (to_data_frame, at_row)
+    return to_data_frame, at_row
+
 
 def create_tv_series_df():
     df = pd.DataFrame(columns=['Title',
@@ -110,14 +111,14 @@ def create_tv_series_df():
                                ])
     return df
 
-def insert_series_info(from_page, to_data_frame,at_row):
 
+def insert_series_info(from_page, to_data_frame, at_row):
     # Anagrafic Data
     html_tag = from_page.find('meta', property='og:title')
     title = html_tag['content']
 
     # Seasons
-    html_tag = from_page.find('div', {'class' : 'seasons-and-year-nav'})
+    html_tag = from_page.find('div', {'class': 'seasons-and-year-nav'})
     count_child = 0
     child_list = []
     if (html_tag != None):
@@ -125,11 +126,11 @@ def insert_series_info(from_page, to_data_frame,at_row):
             if '/title/tt' in str(child):
                 count_child += 1
                 child_list.append(child.text)
-                # TODO: some elaboration on child.text
+                # TODO: some elaboration on child.text // Does not work as supposed -- see tv_series_clean
         # First half of link are season number, of the other half the first is a span, so we took the rest
-        child_list = child_list[(count_child//2)+1:]
+        child_list = child_list[(count_child // 2) + 1:]
         child_list.reverse()
-    else :
+    else:
         html_tag = from_page.find('meta', itemprop='datePublished')
         if html_tag != None:
             child_list = [pd.to_datetime(html_tag['content']).year]
@@ -137,16 +138,15 @@ def insert_series_info(from_page, to_data_frame,at_row):
     for season, year in enumerate(child_list):
         at_row += 1
         to_data_frame.loc[at_row, 'Title'] = title
-        to_data_frame.loc[at_row, 'Season'] = season+1
+        to_data_frame.loc[at_row, 'Season'] = season + 1
         to_data_frame.loc[at_row, 'Year'] = year
-
 
     print(to_data_frame.head())
 
-    return (to_data_frame,at_row)
+    return (to_data_frame, at_row)
 
-def update(links_list,with_page_to_parse):
 
+def update(links_list, with_page_to_parse):
     temp_list = []
     data = with_page_to_parse.get_attribute('innerHTML')
     soup = BeautifulSoup(data, 'html5lib')
@@ -166,10 +166,17 @@ chrome_driver = "./chromedriver"
 os.environ["webdriver.chrome.driver"] = chrome_driver
 driver = webdriver.Chrome(chrome_driver)
 
-super_hero_url_desc = "https://www.imdb.com/search/title?keywords=superhero&explore=title_type,genres&pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=15aedf0d-e467-4a1a-922a-e0cbd7299e84&pf_rd_r=49MWE1P2RCWXVANP5V7Z&pf_rd_s=center-5&pf_rd_t=15051&pf_rd_i=genre&view=simple&sort=release_date,asc&ref_=ft_gnr_pr5_i_3"
-super_hero_url = "https://www.imdb.com/search/title?keywords=superhero&explore=title_type,genres&pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=15aedf0d-e467-4a1a-922a-e0cbd7299e84&pf_rd_r=49MWE1P2RCWXVANP5V7Z&pf_rd_s=center-5&pf_rd_t=15051&pf_rd_i=genre&view=simple&sort=release_date,desc&ref_=ft_gnr_pr5_i_3"
+super_hero_url_desc = "https://www.imdb.com/search/title?keywords=superhero&explore=title_type," \
+                      "genres&pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=" \
+                      "15aedf0d-e467-4a1a-922a-e0cbd7299e84&pf_rd_r=49MWE1P2RCWXVANP5V7Z" \
+                      "&pf_rd_s=center-5&pf_rd_t=15051&pf_rd_i=genre&view=simple&sort=" \
+                      "release_date,asc&ref_=ft_gnr_pr5_i_3"
+super_hero_url = "https://www.imdb.com/search/title?keywords=superhero&explore=" \
+                 "title_type,genres&pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=15aedf0d-e467-4a1a-922a-e0cbd7299e84&" \
+                 "pf_rd_r=49MWE1P2RCWXVANP5V7Z&pf_rd_s=center-5&pf_rd_t=15051&pf_rd_i=" \
+                 "genre&view=simple&sort=release_date,desc&ref_=ft_gnr_pr5_i_3"
 driver.get(super_hero_url)
-
+link = None
 
 try:
     title_range_description = WebDriverWait(driver, 10).until(
@@ -191,27 +198,26 @@ try:
     # Extract the links and save them
     with_content = driver.find_element_by_id('content-2-wide')
     links_list = []
-    links_list = update(links_list,with_content)
+    links_list = update(links_list, with_content)
 
     links_list_store_count = 1
-    links_list_store_file = links_list_store + str(links_list_store_count) +'.pickle'
-    with open(os.path.join(store_directory,links_list_store_file), 'wb') as f:
-            pickle.dump(links_list, f)
+    links_list_store_file = links_list_store + str(links_list_store_count) + '.pickle'
+    with open(os.path.join(store_directory, links_list_store_file), 'wb') as f:
+        pickle.dump(links_list, f)
     f.close()
 
-
-    for i in range(2,how_many_pages_to_load+1):
-    #if False:
+    for i in range(2, how_many_pages_to_load + 1):
+        # if False:
         seed = np.random.poisson(17)
-        print('seed = ',seed)
+        print('seed = ', seed)
         WebDriverWait(driver, np.random.poisson(seed))
-        next = driver.find_element_by_partial_link_text('Next')
-        next.click()
+        next_button = driver.find_element_by_partial_link_text('Next')
+        next_button.click()
         with_content = driver.find_element_by_id('content-2-wide')
         update(links_list, with_content)
         links_list_store_count += 1
-        links_list_store_file = links_list_store + str(links_list_store_count) +'.pickle'
-        with open(os.path.join(store_directory,links_list_store_file), 'wb') as f:
+        links_list_store_file = links_list_store + str(links_list_store_count) + '.pickle'
+        with open(os.path.join(store_directory, links_list_store_file), 'wb') as f:
             pickle.dump(links_list, f)
         f.close()
 
@@ -220,34 +226,33 @@ try:
     at_mv_row = at_tv_row = 0
     movies_df_store_count = 0
     tv_series_df_store_count = 0
-    try:
-        for link in links_list:
-            seed = np.random.poisson(11)
-            print('seed = ', seed)
-            WebDriverWait(driver, np.random.poisson(seed))
-            #link = 'https://www.imdb.com/title/tt0305075/?ref_=adv_li_tt'
-            data = driver.get(link)
-            from_soup = BeautifulSoup(driver.page_source, 'html5lib')
-            content_type = from_soup.find('meta', property ='og:type')
-            if content_type['content']=='video.movie':
-                movies_df, at_mv_row = insert_movie_info(from_soup,movies_df,at_mv_row)
-                movies_df_store_count+=1
-                if (movies_df_store_count%50 == 0):
-                    movies_df_store_file = movies_df_store + str(movies_df_store_count)
-                    movies_df.to_csv(os.path.join(store_directory,movies_df_store_file))
-            if content_type['content']=='video.tv_show':
-                tv_series_df,at_tv_row= insert_series_info(from_soup,tv_series_df,at_tv_row)
-                tv_series_df_store_count += 1
-                if (tv_series_df_store_count%50 != 0):
-                    tv_series_df_store_file = tv_series_df_store + str(tv_series_df_store_count)
-                    tv_series_df.to_csv(os.path.join(store_directory,tv_series_df_store_file))
 
-        movies_df_store_file = movies_df_store + 'final'
-        movies_df.to_csv(os.path.join(data_directory, movies_df_store_file))
-        tv_series_df_store_file = tv_series_df_store + 'final'
-        tv_series_df.to_csv(os.path.join(data_directory, tv_series_df_store_file))
-    except Exception:
-        pass
+    for link in links_list:
+        seed = np.random.poisson(11)
+        print('seed = ', seed)
+        WebDriverWait(driver, np.random.poisson(seed))
+        data = driver.get(link)
+        from_soup = BeautifulSoup(driver.page_source, 'html5lib')
+        content_type = from_soup.find('meta', property='og:type')
+        if content_type['content'] == 'video.movie':
+            movies_df, at_mv_row = insert_movie_info(from_soup, movies_df, at_mv_row)
+            movies_df_store_count += 1
+            if movies_df_store_count % 50 == 0:
+                movies_df_store_file = movies_df_store + str(movies_df_store_count)
+                movies_df.to_csv(os.path.join(store_directory, movies_df_store_file))
+        if content_type['content'] == 'video.tv_show':
+            tv_series_df, at_tv_row = insert_series_info(from_soup, tv_series_df, at_tv_row)
+            tv_series_df_store_count += 1
+            if tv_series_df_store_count % 50 != 0:
+                tv_series_df_store_file = tv_series_df_store + str(tv_series_df_store_count)
+                tv_series_df.to_csv(os.path.join(store_directory, tv_series_df_store_file))
+
+    movies_df_store_file = movies_df_store + 'final'
+    movies_df.to_csv(os.path.join(data_directory, movies_df_store_file))
+    tv_series_df_store_file = tv_series_df_store + 'final'
+    tv_series_df.to_csv(os.path.join(data_directory, tv_series_df_store_file))
+
 finally:
-    print("Broken link ", link)
+    if link is not None:
+        print("Broken link ", link)
     driver.quit()
